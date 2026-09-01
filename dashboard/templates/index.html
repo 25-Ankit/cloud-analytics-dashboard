@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cloud Analytics Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            padding: 30px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .value {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        canvas {
+            max-height: 350px;
+        }
+
+        @media (max-width: 800px) {
+            .cards,
+            .charts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>☁️ Cloud Analytics Dashboard</h1>
+    <p class="subtitle">
+        Real-time Sales Analytics Pipeline
+    </p>
+
+    <div class="cards">
+
+        <div class="card">
+            <h3>Total Orders</h3>
+            <div class="value" id="orders">0</div>
+        </div>
+
+        <div class="card">
+            <h3>Total Sales</h3>
+            <div class="value" id="sales">₹0</div>
+        </div>
+
+        <div class="card">
+            <h3>Average Order</h3>
+            <div class="value" id="average">₹0</div>
+        </div>
+
+    </div>
+
+    <div class="charts">
+
+        <div class="chart-box">
+            <h2>Sales by City</h2>
+            <canvas id="cityChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+            <h2>Sales by Category</h2>
+            <canvas id="categoryChart"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+
+        async function loadAnalytics() {
+
+            const response = await fetch("/api/analytics");
+
+            const data = await response.json();
+
+            document.getElementById("orders").innerText =
+                data.total_orders;
+
+            document.getElementById("sales").innerText =
+                "₹" + data.total_sales.toLocaleString("en-IN");
+
+            document.getElementById("average").innerText =
+                "₹" + data.average_order.toLocaleString("en-IN", {
+                    maximumFractionDigits: 2
+                });
+
+            new Chart(
+                document.getElementById("cityChart"),
+                {
+                    type: "bar",
+
+                    data: {
+                        labels: Object.keys(data.city_sales),
+
+                        datasets: [{
+                            label: "Sales",
+
+                            data: Object.values(data.city_sales)
+                        }]
+                    },
+
+                    options: {
+                        responsive: true
+                    }
+                }
+            );
+
+            new Chart(
+                document.getElementById("categoryChart"),
+                {
+                    type: "doughnut",
+
+                    data: {
+                        labels: Object.keys(data.category_sales),
+
+                        datasets: [{
+                            label: "Sales",
+
+                            data: Object.values(data.category_sales)
+                        }]
+                    },
+
+                    options: {
+                        responsive: true
+                    }
+                }
+            );
+        }
+
+        loadAnalytics();
+
+        setInterval(() => {
+            location.reload();
+        }, 3000);
+
+    </script>
+
+</body>
+</html>
