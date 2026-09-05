@@ -1,4 +1,4 @@
-# ☁️ Cloud Analytics Dashboard
+# Cloud Analytics Dashboard
 
 > Real-time sales analytics pipeline with synthetic data generation, local event streaming (SQLite-based Kinesis simulation), and a live Flask + Chart.js dashboard.
 
@@ -9,7 +9,7 @@
 ![GitHub](https://img.shields.io/badge/GitHub-ankit--25-black?logo=github)
 ![Repo](https://img.shields.io/badge/Repo-cloud--analytics--dashboard-blue)
 
-## 📖 Overview
+##  Overview
 
 **Cloud Analytics Dashboard** simulates a cloud-native real-time analytics pipeline locally without requiring AWS services.
 
@@ -20,7 +20,7 @@ It generates synthetic e-commerce transactions (product, category, city, price) 
 
 Ideal for learning/demonstrating streaming architectures, ETL patterns, and real-time dashboards.
 
-## ✨ Features
+##  Features
 
 - **Synthetic Data Generation** — 8 products across 3 categories (`Electronics`, `Accessories`, `Wearables`) and 6 Indian cities
 - **Local Streaming Layer** — `stream/stream.py` mimics AWS Kinesis with `create_stream()`, `put_event()`, `get_events()` on SQLite
@@ -29,7 +29,7 @@ Ideal for learning/demonstrating streaming architectures, ETL patterns, and real
 - **REST API** — `GET /api/analytics` returns JSON analytics
 - **Docker Ready** — Slim `python:3.11` image, exposes port 5000
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -40,7 +40,7 @@ Ideal for learning/demonstrating streaming architectures, ETL patterns, and real
 | **Frontend** | HTML, CSS, Chart.js (CDN) |
 | **Container** | Docker |
 
-## 🏗️ Architecture
+## Architecture
 
 ```
                 +---------------------+
@@ -84,7 +84,7 @@ Ideal for learning/demonstrating streaming architectures, ETL patterns, and real
 }
 ```
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 cloud-analytics-dashboard/
@@ -104,7 +104,7 @@ cloud-analytics-dashboard/
 └── README.md                  # Project documentation
 ```
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 - Python 3.11+
@@ -141,7 +141,7 @@ python stream/stream.py
 ```
 This creates `stream/events.db` with table `events` if not exists (`stream/stream.py:9-21`).
 
-## 💻 Usage
+##  Usage
 
 You need **2-3 terminals** for full pipeline demo.
 
@@ -210,7 +210,7 @@ Example `GET /api/analytics` response:
 ```
 Logic: `dashboard/app.py:16-56` and `processor/processor.py:13-60`
 
-## 🐳 Docker
+##  Docker
 
 Build and run (includes only `dashboard` + `stream` per `Dockerfile:11-13`):
 
@@ -226,7 +226,7 @@ docker run -p 5000:5000 cloud-analytics-dashboard
 > COPY processor ./processor
 > ```
 
-## ⚙️ Configuration
+##   Configuration
 
 No env vars required. Paths are relative:
 
@@ -240,7 +240,7 @@ rm stream/events.db events.db
 python stream/stream.py
 ```
 
-## 🧪 Testing the Stream Directly
+##   Testing the Stream Directly
 
 ```python
 from stream.stream import create_stream, put_event, get_events
@@ -250,7 +250,7 @@ put_event({"product": "Laptop", "total_amount": 55000, "city": "Pune", "category
 print(get_events())
 ```
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repo
 2. Create branch: `git checkout -b feature/my-feature`
@@ -258,12 +258,12 @@ print(get_events())
 4. Push: `git push origin feature/my-feature`
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT License - see `LICENSE` file if present.
 Copyright (c) 2026 [ankit-25](https://github.com/ankit-25)
 
-## 👤 Author
+## Author
 
 **Ankit** — [@ankit-25](https://github.com/ankit-25)
 
@@ -271,7 +271,7 @@ Copyright (c) 2026 [ankit-25](https://github.com/ankit-25)
 - Project Repo: `https://github.com/ankit-25/cloud-analytics-dashboard`
 - Achievements: Arctic Code Vault Contributor, Pull Shark
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Faker](https://faker.readthedocs.io/) for synthetic data
 - [Flask](https://flask.palletsprojects.com/)
