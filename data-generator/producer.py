@@ -54,7 +54,7 @@ def generate_sale():
 
 if __name__ == "__main__":
     print("Starting Cloud Analytics Data Generator...")
-    print("Sending events to Local Kinesis Stream...")
+    print("Sending events to Local  Kinesis Stream...")
     print("Press CTRL+C to stop.\n")
 
     try:
