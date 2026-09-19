@@ -1,126 +1,47 @@
-# Cloud Analytics Dashboard
+# Cloud Analytics Dashboard — Complete Local-First Project
 
-A **local-first, cloud-agnostic streaming analytics project** built with Python, SQLite, Flask, Docker, and Docker Compose.
+A cloud-agnostic event analytics platform demonstrating **stream ingestion → policy/runtime → incremental processing → materialized analytics → REST API → live dashboard**, plus benchmarks, an extension SDK, and three application adapters.
 
-The project demonstrates a small event-driven analytics pipeline without requiring AWS, cloud credentials, or managed cloud services.
+No AWS/Azure/GCP account or cloud credentials are required.
 
-## Architecture
+## Project phases
 
-```text
-                    ┌─────────────────────┐
-                    │   Data Generator    │
-                    │ random sales events │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   SQLite Event Log  │
-                    │      events table   │
-                    │        WAL mode     │
-                    └──────────┬──────────┘
-                               │
-                         new events only
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │ Incremental         │
-                    │ Processor            │
-                    │ checkpointed batches │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-             ┌─────────────────────────────────┐
-             │ Materialized Analytics Tables   │
-             │ totals / city / category        │
-             └────────────────┬────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────────┐
-                    │ Flask REST API      │
-                    │ /api/analytics      │
-                    │ /api/health         │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │ Live Web Dashboard  │
-                    │ Chart.js polling    │
-                    └─────────────────────┘
-```
+| Phase | Included |
+|---|---|
+| 1 | SQLite/WAL stream, incremental checkpoint processor, API, dashboard, tests, Docker Compose |
+| 2 | Full-rescan vs incremental benchmark harness |
+| 3 | Runtime + JSON policy engine + rate limiting |
+| 4 | Versioned extension SDK + lifecycle runtime |
+| 5 | E-commerce, fitness, and library adapters |
 
-## Phase 1 goals
-
-- SQLite-backed event stream
-- WAL mode for better concurrent read/write behavior
-- Basic event validation
-- Incremental processing instead of rescanning the whole event table
-- Durable processor checkpoint
-- Materialized aggregate tables
-- REST API
-- Live dashboard updates without page reloads
-- Configurable environment variables
-- Docker image
-- Docker Compose for the complete local stack
-- Automated tests
-- No cloud-provider lock-in
-
-## Run locally
-
-Create an environment if desired:
+## Quick start
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pytest -q
+python scripts/e2e_smoke.py
 ```
 
-Initialize the database:
+Initialize and run components manually:
 
 ```bash
 python -m stream.stream
-```
-
-Start the processor:
-
-```bash
 python -m processor.processor
-```
-
-In another terminal, start the generator:
-
-```bash
 python data-generator/producer.py
-```
-
-In another terminal, start the dashboard:
-
-```bash
 python dashboard/app.py
 ```
 
-Open:
+Open `http://localhost:5000`.
 
-```text
-http://localhost:5000
-```
-
-## Run tests
-
-```bash
-pytest -q
-```
-
-## Docker Compose
+## Docker
 
 ```bash
 docker compose up --build
 ```
 
-Then open:
-
-```text
-http://localhost:5000
-```
+Dashboard: `http://localhost:5000`
 
 Stop:
 
@@ -128,89 +49,28 @@ Stop:
 docker compose down
 ```
 
-## API
+## Benchmark
 
-### Health
-
-```text
-GET /api/health
+```bash
+python -m benchmarks.benchmark --events 5000
 ```
 
-### Analytics snapshot
+## Runtime example
 
-```text
-GET /api/analytics
+```bash
+python -m runtime.demo
 ```
 
-### City aggregates
+## Key design property
 
-```text
-GET /api/analytics/cities
-```
-
-### Category aggregates
-
-```text
-GET /api/analytics/categories
-```
-
-## Configuration
-
-Copy `.env.example` to `.env` if you want local environment configuration.
-
-Important variables:
-
-- `ANALYTICS_DB_PATH`
-- `PROCESSOR_INTERVAL`
-- `PROCESSOR_BATCH_SIZE`
-- `GENERATOR_INTERVAL`
-
-No credentials are required.
-
-## Why incremental processing?
-
-The original implementation repeatedly scanned the complete event table to calculate totals. That becomes increasingly expensive as the event history grows.
-
-Phase 1 introduces a processor checkpoint:
-
-```text
-last_event_id
-```
-
-Each processor run reads only:
-
-```text
-events WHERE id > last_event_id
-```
-
-and updates materialized aggregates. This makes the processing model incremental and gives the project a foundation for later scaling.
-
-## Phase 1 scope
-
-This phase intentionally stays local-first.
-
-It does **not** require:
-
-- AWS
-- Azure
-- Google Cloud
-- Kubernetes
-- Terraform
-- managed queues
-- cloud databases
-- cloud credentials
-
-Those can be evaluated in later phases after the local architecture and experiments are stable.
+The processor uses one transaction for aggregate updates and checkpoint advancement. This prevents the SQLite `database is locked` failure that occurs when checkpointing through a second connection while the aggregate transaction is still open.
 
 ## Security
 
-Do not commit:
+Do not commit `.env`, credentials, API keys, private certificates, database files, or runtime logs. `.gitignore` covers common secret/runtime artifacts.
 
-- `.env` files
-- database files
-- logs
-- credentials
-- API keys
-- private certificates
+## Documentation
 
-The repository's `.gitignore` excludes common runtime and secret files.
+- `docs/ARCHITECTURE.md` — architecture and transaction invariants
+- `docs/EXPERIMENTS.md` — benchmark methodology
+- `docs/ROADMAP.md` — phases and future work

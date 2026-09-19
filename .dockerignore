@@ -1,8 +1,11 @@
+.git
+.github
 .venv
 __pycache__
-*.pyc
-.git
-.gitignore
-.vscode
-.env
-*.log
+.pytest_cache
+*.db
+*.db-*
+data/*
+!data/.gitkeep
+benchmarks/results/*
+!benchmarks/results/.gitkeep

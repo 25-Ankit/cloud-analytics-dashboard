@@ -6,13 +6,15 @@ services:
       - "5000:5000"
     environment:
       ANALYTICS_DB_PATH: /app/data/events.db
+      POLICY_PATH: /app/runtime/policies/default.json
     volumes:
       - analytics-data:/app/data
     depends_on:
-      - processor
+      processor:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health', timeout=3)"]
       interval: 10s
       timeout: 5s
       retries: 5

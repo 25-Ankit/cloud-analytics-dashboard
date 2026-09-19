@@ -1,0 +1,6 @@
+{
+  "allowed_event_types": ["sale", "ecommerce_sale", "fitness_activity", "library_checkout"],
+  "max_amount": 1000000,
+  "required_fields": ["event_type", "city", "category", "amount"],
+  "rate_limit_per_minute": 600
+}
