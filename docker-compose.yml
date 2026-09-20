@@ -1,0 +1,44 @@
+services:
+  dashboard:
+    build: .
+    command: gunicorn --bind 0.0.0.0:5000 --workers 1 dashboard.app:app
+    ports:
+      - "5000:5000"
+    environment:
+      ANALYTICS_DB_PATH: /app/data/events.db
+    volumes:
+      - analytics-data:/app/data
+    depends_on:
+      - processor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  processor:
+    build: .
+    command: python -m processor.processor --interval 2 --batch-size 500
+    environment:
+      ANALYTICS_DB_PATH: /app/data/events.db
+      PROCESSOR_INTERVAL: "2"
+      PROCESSOR_BATCH_SIZE: "500"
+    volumes:
+      - analytics-data:/app/data
+    restart: unless-stopped
+
+  generator:
+    build: .
+    command: python data-generator/producer.py
+    environment:
+      ANALYTICS_DB_PATH: /app/data/events.db
+      GENERATOR_INTERVAL: "2"
+    volumes:
+      - analytics-data:/app/data
+    depends_on:
+      - processor
+    restart: unless-stopped
+
+volumes:
+  analytics-data:

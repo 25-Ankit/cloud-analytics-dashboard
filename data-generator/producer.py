@@ -1,74 +1,40 @@
-import json
-import random
-import time
 import os
-import sys
+import random
+import signal
+import time
 
-from datetime import datetime, timezone
-from faker import Faker
+from stream.stream import init_db, put_event
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+CITIES = ["Mumbai", "Delhi", "Bengaluru", "Pune", "Hyderabad", "Chennai"]
+CATEGORIES = ["Electronics", "Fashion", "Grocery", "Home", "Sports"]
 
-from stream.stream import put_event
-
-fake = Faker()
-
-PRODUCTS = [
-    ("Laptop", "Electronics", 55000),
-    ("Smartphone", "Electronics", 25000),
-    ("Headphones", "Accessories", 3000),
-    ("Monitor", "Electronics", 18000),
-    ("Keyboard", "Accessories", 2500),
-    ("Mouse", "Accessories", 1200),
-    ("Tablet", "Electronics", 22000),
-    ("Smartwatch", "Wearables", 8000),
-]
-
-CITIES = [
-    "Mumbai",
-    "Delhi",
-    "Bangalore",
-    "Pune",
-    "Hyderabad",
-    "Chennai",
-]
+running = True
 
 
-def generate_sale():
-    product, category, price = random.choice(PRODUCTS)
-    quantity = random.randint(1, 5)
+def stop_handler(signum, frame):
+    global running
+    running = False
 
-    sale = {
-        "transaction_id": fake.uuid4(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "product": product,
-        "category": category,
-        "quantity": quantity,
-        "price": price,
-        "total_amount": quantity * price,
-        "city": random.choice(CITIES),
-    }
 
-    return sale
+signal.signal(signal.SIGINT, stop_handler)
+signal.signal(signal.SIGTERM, stop_handler)
+
+
+def main():
+    interval = float(os.getenv("GENERATOR_INTERVAL", "2"))
+    init_db()
+    print(f"generator started; interval={interval}s", flush=True)
+
+    while running:
+        city = random.choice(CITIES)
+        category = random.choice(CATEGORIES)
+        amount = round(random.uniform(100, 5000), 2)
+        event_id = put_event(city, category, amount)
+        print(f"event={event_id} city={city} category={category} amount={amount}", flush=True)
+        time.sleep(interval)
+
+    print("generator stopped", flush=True)
 
 
 if __name__ == "__main__":
-    print("Starting Cloud Analytics Data Generator...")
-    print("Sending events to Local Kinesis Stream...")
-    print("Press CTRL+C to stop.\n")
-
-    try:
-        while True:
-            sale = generate_sale()
-
-            # Send event to our local stream
-            put_event(sale)
-
-            print("Event sent:")
-            print(json.dumps(sale, indent=2))
-            print("-" * 50)
-
-            time.sleep(2)
-
-    except KeyboardInterrupt:
-        print("\nData generator stopped.")
+    main()

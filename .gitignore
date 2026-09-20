@@ -1,8 +1,33 @@
-.venv/
-__pycache__/
-*.pyc
-.vscode/
+# Environment / secrets
 .env
+.env.*
+!.env.example
+
+# Databases / runtime data
+*.db
+*.db-shm
+*.db-wal
+data/*.db
+data/*.db-*
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Logs
 *.log
-events.db
-stream/events.db
+logs/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,64 +1,78 @@
-import sqlite3
-import json
+import argparse
 import os
+import time
+from datetime import datetime, timezone
 
-DB_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "..",
-    "stream",
-    "events.db"
-)
+from stream.stream import get_connection, get_checkpoint, get_events_after, init_db, set_checkpoint
+
+DEFAULT_BATCH_SIZE = 500
 
 
-def process_events():
-    conn = sqlite3.connect(DB_PATH)
+def process_once(batch_size: int = DEFAULT_BATCH_SIZE) -> int:
+    init_db()
+    checkpoint = get_checkpoint()
+    events = get_events_after(checkpoint, batch_size)
+    if not events:
+        return 0
 
-    rows = conn.execute("""
-        SELECT event_data
-        FROM events
-        ORDER BY id
-    """).fetchall()
+    with get_connection() as conn:
+        for event in events:
+            conn.execute(
+                """
+                INSERT INTO analytics_totals(id, total_orders, total_sales, updated_at)
+                VALUES (1, 1, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    total_orders = total_orders + 1,
+                    total_sales = total_sales + excluded.total_sales,
+                    updated_at = excluded.updated_at
+                """,
+                (float(event["amount"]), datetime.now(timezone.utc).isoformat()),
+            )
 
-    conn.close()
+            conn.execute(
+                """
+                INSERT INTO city_sales(city, orders, sales)
+                VALUES (?, 1, ?)
+                ON CONFLICT(city) DO UPDATE SET
+                    orders = orders + 1,
+                    sales = sales + excluded.sales
+                """,
+                (event["city"], float(event["amount"])),
+            )
 
-    total_orders = len(rows)
-    total_sales = 0
-    city_sales = {}
-    category_sales = {}
+            conn.execute(
+                """
+                INSERT INTO category_sales(category, orders, sales)
+                VALUES (?, 1, ?)
+                ON CONFLICT(category) DO UPDATE SET
+                    orders = orders + 1,
+                    sales = sales + excluded.sales
+                """,
+                (event["category"], float(event["amount"])),
+            )
 
-    for row in rows:
-        event = json.loads(row[0])
+        set_checkpoint(events[-1]["id"])
 
-        amount = event["total_amount"]
-        city = event["city"]
-        category = event["category"]
+    return len(events)
 
-        total_sales += amount
 
-        city_sales[city] = city_sales.get(city, 0) + amount
-        category_sales[category] = category_sales.get(category, 0) + amount
-
-    average_order = (
-        total_sales / total_orders
-        if total_orders > 0
-        else 0
-    )
-
-    print("\n========== CLOUD ANALYTICS ==========")
-    print(f"Total Orders      : {total_orders}")
-    print(f"Total Sales       : ₹{total_sales:,.2f}")
-    print(f"Average Order     : ₹{average_order:,.2f}")
-
-    print("\nSales by City:")
-    for city, sales in city_sales.items():
-        print(f"  {city}: ₹{sales:,.2f}")
-
-    print("\nSales by Category:")
-    for category, sales in category_sales.items():
-        print(f"  {category}: ₹{sales:,.2f}")
-
-    print("======================================")
+def run_loop(interval: float, batch_size: int) -> None:
+    while True:
+        processed = process_once(batch_size)
+        if processed:
+            print(f"processed={processed}", flush=True)
+        time.sleep(interval)
 
 
 if __name__ == "__main__":
-    process_events()
+    parser = argparse.ArgumentParser(description="Incremental analytics processor")
+    parser.add_argument("--once", action="store_true", help="Process one batch and exit")
+    parser.add_argument("--interval", type=float, default=float(os.getenv("PROCESSOR_INTERVAL", "2")))
+    parser.add_argument("--batch-size", type=int, default=int(os.getenv("PROCESSOR_BATCH_SIZE", DEFAULT_BATCH_SIZE)))
+    args = parser.parse_args()
+
+    if args.once:
+        print(f"processed={process_once(args.batch_size)}")
+    else:
+        init_db()
+        run_loop(args.interval, args.batch_size)
